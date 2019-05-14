@@ -1,6 +1,6 @@
 # Description: New PC BOXSTARTER Script
 # Author: Jon Childers
-# Last Updated: 4/10/19
+# Last Updated: 5/14/19
 #
 # !!!!! Set "Set-ExecutionPolicy RemoteSigned" in an elevated shell before launchiing this script: 
 # 
@@ -413,6 +413,53 @@ If (!(Test-Path $registryOEM)) {
 Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name LaunchTo -Type DWord -Value 1
 # Change it back to "Quick Access" (Windows 10 default)
 #Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name LaunchTo -Type DWord -Value 2
+
+# Unpins Edge from taskbar
+function UnPin-App ( [string]$appname ) {
+	try {
+		$exec = $false
+		
+		((New-Object -Com Shell.Application).NameSpace('shell:::{4234d49b-0245-4df3-b780-3893943456e1}').Items() | ?{$_.Name -eq $appname}).Verbs() | ?{$_.Name.replace('&','') -match 'Unpin from taskbar'} | %{$_.DoIt(); $exec = $true}
+		
+		if ($exec) {
+			Write "App '$appname' unpinned from Taskbar"
+		} else {
+			Write "'$appname' not found or 'Unpin from taskbar' not found on item!"
+		}
+		
+	} catch {
+		Write-Error "Error unpinning $appname from taskbar!"
+	}
+}
+UnPin-App "Microsoft Edge"
+
+#Disable UAC though powershell
+$osversion = (Get-CimInstance Win32_OperatingSystem).Version
+$version = $osversion.split(".")[0]
+
+if ($version -eq 10) {
+	Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value "0"
+} ElseIf ($Version -eq 6) {
+	$sub = $version.split(".")[1]
+    if ($sub -eq 1 -or $sub -eq 0) {
+		Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -Value "0"
+    } Else {
+		Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value "0"
+    }
+} ElseIf ($Version -eq 5) {
+	Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -Value "0"
+} Else {
+	Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value "0"
+}
+
+#Enable RDP and allow it through the firewall
+Set-RemoteDesktopConfig -Enable -ConfigureFirewall -AllowOlderClients
+   
+#Set NumLock ON at Windows login screen
+$path = 'HKU:\.DEFAULT\Control Panel\Keyboard\'
+$name = 'InitialKeyboardIndicators'
+$value = '2'
+Set-Itemproperty -Path $path -Name $name -Value $value
 
 # Calling all functions
 installthese
