@@ -19,6 +19,9 @@ If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
     Exit
 }
 
+#no errors throughout
+$ErrorActionPreference = 'silentlycontinue'
+
 # Install Chocolatey
 Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
@@ -406,6 +409,10 @@ If (!(Test-Path $registryOEM)) {
 	Set-ItemProperty $registryOEM  SystemPaneSuggestionsEnabled -Value 0   	
 }
 
+# Change Explorer home screen back to "This PC"
+Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name LaunchTo -Type DWord -Value 1
+# Change it back to "Quick Access" (Windows 10 default)
+#Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name LaunchTo -Type DWord -Value 2
 
 # Calling all functions
 installthese
